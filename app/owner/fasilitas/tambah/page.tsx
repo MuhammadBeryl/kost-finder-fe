@@ -1,0 +1,72 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+
+export default function TambahFasilitasPage() {
+  const router = useRouter();
+  const [formData, setFormData] = useState({
+    nama_fasilitas: '',
+    deskripsi: '',
+  });
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const res = await fetch('http://localhost:8000/fasilitas/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      if (res.ok) {
+        alert('Fasilitas berhasil ditambahkan!');
+        router.push('/owner/fasilitas');
+      } else {
+        alert('Gagal menambahkan fasilitas');
+      }
+    } catch {
+      alert('Terjadi kesalahan koneksi.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="bg-white p-6 rounded-2xl shadow-md max-w-2xl mx-auto">
+      <h2 className="text-xl font-bold text-gray-800 mb-4">Tambah Fasilitas</h2>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <input
+          name="nama_fasilitas"
+          placeholder="Nama Fasilitas"
+          value={formData.nama_fasilitas}
+          onChange={handleChange}
+          required
+          className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm"
+        />
+        <textarea
+          name="deskripsi"
+          placeholder="Deskripsi Fasilitas"
+          value={formData.deskripsi}
+          onChange={handleChange}
+          rows={3}
+          required
+          className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm resize-none"
+        />
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-indigo-700 hover:bg-indigo-800 text-white py-2 rounded-xl font-semibold transition-all"
+        >
+          {loading ? 'Menyimpan...' : 'Tambah Fasilitas'}
+        </button>
+      </form>
+    </div>
+  );
+}
