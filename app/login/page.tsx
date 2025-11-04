@@ -23,10 +23,10 @@ export default function LoginPage() {
       }
 
       // Ganti URL ini dengan API login backend kamu
-      // const res = await fetch('http://localhost:8000/user/login', {...});
+      const res = await fetch('https://learn.smktelkom-mlg.sch.id/kos/api/login');
 
       setSuccess('Login berhasil! Mengalihkan...');
-      setTimeout(() => router.push('/'), 1500);
+      setTimeout(() => router.push('/society'), 1500);
     } catch {
       setError('Terjadi kesalahan saat login.');
     }

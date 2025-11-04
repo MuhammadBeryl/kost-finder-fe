@@ -14,11 +14,11 @@ export default function RegisterPage() {
   const router = useRouter();
 
   const [formData, setFormData] = useState({
-    username_users: '',
-    email_users: '',
-    password_hash_users: '',
-    phone_number_users: '',
-    role_user: 'society', // default role
+    name: '',
+    email: '',
+    password: '',
+    phone: '',
+    role: 'society', // default role
   });
 
   const [error, setError] = useState('');
@@ -33,9 +33,12 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch('http://localhost:8000/user/create', {
+      const res = await fetch('https://learn.smktelkom-mlg.sch.id/kos/api/register', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'MakerID': "1"
+        },
         body: JSON.stringify(formData),
       });
 
@@ -43,11 +46,11 @@ export default function RegisterPage() {
         setSuccess('Berhasil mendaftar! Silakan login.');
         setError('');
         setFormData({
-          username_users: '',
-          email_users: '',
-          password_hash_users: '',
-          phone_number_users: '',
-          role_user: 'society',
+          name: '',
+          email: '',
+          password: '',
+          phone: '',
+          role: 'society',
         });
         setTimeout(() => router.push('/login'), 1500);
       } else {
@@ -101,9 +104,9 @@ export default function RegisterPage() {
               <UserIcon className="h-5 w-5 text-gray-400" />
               <input
                 type="text"
-                name="username_users"
+                name="name"
                 placeholder="Nama Lengkap"
-                value={formData.username_users}
+                value={formData.name}
                 onChange={handleChange}
                 required
                 className="flex-1 bg-transparent text-gray-800 outline-none text-sm"
@@ -115,9 +118,9 @@ export default function RegisterPage() {
               <EnvelopeIcon className="h-5 w-5 text-gray-400" />
               <input
                 type="email"
-                name="email_users"
+                name="email"
                 placeholder="Email"
-                value={formData.email_users}
+                value={formData.email}
                 onChange={handleChange}
                 required
                 className="flex-1 bg-transparent text-gray-800 outline-none text-sm"
@@ -129,9 +132,9 @@ export default function RegisterPage() {
               <LockClosedIcon className="h-5 w-5 text-gray-400" />
               <input
                 type="password"
-                name="password_hash_users"
+                name="password"
                 placeholder="Password"
-                value={formData.password_hash_users}
+                value={formData.password}
                 onChange={handleChange}
                 required
                 className="flex-1 bg-transparent text-gray-800 outline-none text-sm"
@@ -143,9 +146,9 @@ export default function RegisterPage() {
               <DevicePhoneMobileIcon className="h-5 w-5 text-gray-400" />
               <input
                 type="tel"
-                name="phone_number_users"
+                name="phone"
                 placeholder="Nomor Telepon"
-                value={formData.phone_number_users}
+                value={formData.phone}
                 onChange={handleChange}
                 required
                 className="flex-1 bg-transparent text-gray-800 outline-none text-sm"
@@ -156,8 +159,8 @@ export default function RegisterPage() {
             <div className="flex items-center gap-3 bg-white border border-gray-300 rounded-xl px-4 py-3">
               <UserGroupIcon className="h-5 w-5 text-gray-400" />
               <select
-                name="role_user"
-                value={formData.role_user}
+                name="role"
+                value={formData.role}
                 onChange={handleChange}
                 className="flex-1 bg-transparent text-gray-800 outline-none text-sm"
               >
