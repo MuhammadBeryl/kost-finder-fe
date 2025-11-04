@@ -1,8 +1,10 @@
 'use client';
 
+// ...existing code...
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { EnvelopeIcon, LockClosedIcon } from '@heroicons/react/24/solid';
+import { storeCookies } from '../../lib/client-cookie';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -22,11 +24,37 @@ export default function LoginPage() {
         return;
       }
 
-      // Ganti URL ini dengan API login backend kamu
-      const res = await fetch('https://learn.smktelkom-mlg.sch.id/kos/api/login');
+      const res = await fetch('https://learn.smktelkom-mlg.sch.id/kos/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json',
+          'MakerID': '1'
+         },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        const msg = data && (data.message || data.error) ? (data.message || data.error) : 'Login gagal';
+        setError(String(msg));
+        return;
+      }
+
+      // ambil token & user id dari banyak kemungkinan struktur response
+      const token = data?.token || data?.access_token || data?.data?.token || data?.data?.access_token || data?.data?.accessToken;
+      const userId = data?.user?.id || data?.data?.user?.id || data?.data?.id || data?.id;
+
+      if (!token) {
+        setError('Token tidak diterima dari server.');
+        return;
+      }
+
+      // simpan cookie (1 hari)
+      storeCookies('token', token);
+      if (userId) storeCookies('user_id', String(userId));
 
       setSuccess('Login berhasil! Mengalihkan...');
-      setTimeout(() => router.push('/society'), 1500);
+      setTimeout(() => router.push('/owner/kos'), 800);
     } catch {
       setError('Terjadi kesalahan saat login.');
     }

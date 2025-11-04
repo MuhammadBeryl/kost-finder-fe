@@ -1,19 +1,27 @@
+// ...existing code...
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { getCookies } from '../../../../lib/client-cookie';
 
 export default function TambahKosPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
-    nama_kos: '',
-    harga_kos: '',
-    lokasi_kos: '',
-    deskripsi_kos: '',
+    user_id: '', // akan diisi dari cookie
+    name: '',
+    address: '',
+    price_per_month: '',
+    gender: 'male',
   });
   const [loading, setLoading] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  useEffect(() => {
+    const uid = getCookies('user_id');
+    setFormData((prev) => ({ ...prev, user_id: uid || '' }));
+  }, []);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
@@ -22,17 +30,48 @@ export default function TambahKosPage() {
     setLoading(true);
 
     try {
-      const res = await fetch('http://localhost:8000/kos/create', {
+      // ambil token dari cookie
+      const token = getCookies('token');
+      if (!token) {
+        alert('Token tidak ditemukan. Silakan login ulang.');
+        router.push('/login');
+        setLoading(false);
+        return;
+      }
+
+      const payload = {
+        user_id: formData.user_id || getCookies('user_id') || '1',
+        name: formData.name,
+        address: formData.address,
+        price_per_month: Number(formData.price_per_month),
+        gender: formData.gender,
+      };
+
+      const res = await fetch('https://learn.smktelkom-mlg.sch.id/kos/api/admin/store_kos', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'MakerID': '1'
+        },
+        body: JSON.stringify(payload),
       });
 
+      if (res.status === 401 || res.status === 403) {
+        alert('Token tidak valid atau kedaluwarsa. Silakan login ulang.');
+        router.push('/login');
+        return;
+      }
+
+      const data = await res.json().catch(() => null);
+
       if (res.ok) {
-        alert('Kos berhasil ditambahkan!');
+        const msg = data && (data.message || data.success) ? (data.message || data.success) : 'Kos berhasil ditambahkan!';
+        alert(msg);
         router.push('/owner/kos');
       } else {
-        alert('Gagal menambahkan kos');
+        const errMsg = data && (data.error || data.message) ? (data.error || data.message) : 'Gagal menambahkan kos';
+        alert(errMsg);
       }
     } catch {
       alert('Terjadi kesalahan koneksi ke server.');
@@ -46,39 +85,43 @@ export default function TambahKosPage() {
       <h2 className="text-xl font-bold text-gray-800 mb-4">Tambah Kos Baru</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         <input
-          name="nama_kos"
+          name="name"
           placeholder="Nama Kos"
-          value={formData.nama_kos}
+          value={formData.name}
           onChange={handleChange}
           required
-          className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm"
+          className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm text-black"
         />
+
         <input
-          name="harga_kos"
-          placeholder="Harga Kos"
+          name="price_per_month"
+          placeholder="Harga per bulan"
           type="number"
-          value={formData.harga_kos}
+          value={formData.price_per_month}
           onChange={handleChange}
           required
-          className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm"
+          className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm text-black"
         />
+
         <input
-          name="lokasi_kos"
-          placeholder="Lokasi Kos"
-          value={formData.lokasi_kos}
+          name="address"
+          placeholder="Alamat / Lokasi"
+          value={formData.address}
           onChange={handleChange}
           required
-          className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm"
+          className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm text-black"
         />
-        <textarea
-          name="deskripsi_kos"
-          placeholder="Deskripsi Kos"
-          value={formData.deskripsi_kos}
+
+        <select
+          name="gender"
+          value={formData.gender}
           onChange={handleChange}
-          rows={3}
-          required
-          className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm resize-none"
-        />
+          className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm text-black"
+        >
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+          <option value="all">All</option>
+        </select>
 
         <button
           type="submit"
