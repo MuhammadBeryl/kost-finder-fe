@@ -1,12 +1,14 @@
+// ...existing code...
 'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { getCookies } from '../../../../lib/client-cookie'
 
 export default function TambahFasilitasPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
-    nama_fasilitas: '',
+    facility_name: '',
     deskripsi: '',
   });
   const [loading, setLoading] = useState(false);
@@ -19,18 +21,47 @@ export default function TambahFasilitasPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:8000/fasilitas/create', {
+      // ambil token dan id dari cookie (ubah key jika berbeda)
+      const token = getCookies('token');
+      const id = getCookies('kos_id') || getCookies('user_id') || '1';
+
+      if (!token) {
+        alert('Token tidak ditemukan. Silakan login ulang.');
+        router.push('/login');
+        setLoading(false);
+        return;
+      }
+
+      const url = `https://learn.smktelkom-mlg.sch.id/kos/api/store_facility/${id}`;
+
+      const res = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'MakerID': '1',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify(formData),
       });
+
+      if (res.status === 401 || res.status === 403) {
+        alert('Token tidak valid atau kedaluwarsa. Silakan login ulang.');
+        router.push('/login');
+        return;
+      }
+
+      const data = await res.json().catch(() => null);
+
       if (res.ok) {
-        alert('Fasilitas berhasil ditambahkan!');
+        const msg = data && (data.message || data.success) ? (data.message || data.success) : 'Fasilitas berhasil ditambahkan!';
+        alert(msg);
         router.push('/owner/fasilitas');
       } else {
-        alert('Gagal menambahkan fasilitas');
+        const errMsg = data && (data.error || data.message) ? (data.error || data.message) : `Gagal menambahkan fasilitas (status ${res.status})`;
+        alert(errMsg);
       }
-    } catch {
+    } catch (err) {
+      console.error(err);
       alert('Terjadi kesalahan koneksi.');
     } finally {
       setLoading(false);
@@ -42,21 +73,12 @@ export default function TambahFasilitasPage() {
       <h2 className="text-xl font-bold text-gray-800 mb-4">Tambah Fasilitas</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         <input
-          name="nama_fasilitas"
+          name="facility_name"
           placeholder="Nama Fasilitas"
-          value={formData.nama_fasilitas}
+          value={formData.facility_name}
           onChange={handleChange}
           required
-          className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm"
-        />
-        <textarea
-          name="deskripsi"
-          placeholder="Deskripsi Fasilitas"
-          value={formData.deskripsi}
-          onChange={handleChange}
-          rows={3}
-          required
-          className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm resize-none"
+          className="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm text-black"
         />
 
         <button
@@ -70,3 +92,4 @@ export default function TambahFasilitasPage() {
     </div>
   );
 }
+// ...existing code...

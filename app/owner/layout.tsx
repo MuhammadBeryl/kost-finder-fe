@@ -28,6 +28,17 @@ export default function OwnerLayout({ children }: { children: React.ReactNode })
     { name: 'Profile', icon: <UserCircleIcon className="h-5 w-5" />, path: '/owner/profile' },
   ];
 
+  // 🔹 Fungsi Logout
+  const handleLogout = () => {
+    // Hapus data login di localStorage / sessionStorage
+    localStorage.removeItem('token');
+    localStorage.removeItem('user'); // kalau kamu simpan data user
+    sessionStorage.clear();
+
+    // Redirect ke halaman login
+    router.push('/login');
+  };
+
   return (
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar */}
@@ -54,8 +65,10 @@ export default function OwnerLayout({ children }: { children: React.ReactNode })
             ))}
           </nav>
         </div>
+
+        {/* 🔹 Tombol Logout */}
         <button
-          onClick={() => router.push('/login')}
+          onClick={handleLogout}
           className="flex items-center gap-3 px-5 py-3 bg-indigo-900 hover:bg-red-700 transition-all text-sm"
         >
           <ArrowRightOnRectangleIcon className="h-5 w-5" />

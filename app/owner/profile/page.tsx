@@ -4,10 +4,9 @@ import { useState } from 'react';
 
 export default function EditProfile() {
   const [profile, setProfile] = useState({
-    name: 'Beryl Maulana',
-    email: 'beryl@gmail.com',
-    phone: '08123456789',
-    image: '/images/profile.jpg',
+    name: 'name',
+    email: 'email',
+    phone: 'phone',
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -18,12 +17,7 @@ export default function EditProfile() {
     <div className="bg-white p-6 rounded-2xl shadow-md max-w-2xl mx-auto">
       <h2 className="text-xl font-bold text-gray-800 mb-4">Edit Profil</h2>
       <div className="flex items-center gap-6 mb-6">
-        <img
-          src={profile.image}
-          alt="Profile"
-          className="h-20 w-20 rounded-full object-cover border-2 border-indigo-600"
-        />
-        <input type="file" className="text-sm text-gray-600" />
+
       </div>
       <form className="space-y-4">
         <input

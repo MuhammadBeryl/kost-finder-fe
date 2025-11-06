@@ -47,7 +47,7 @@ export default function TambahKosPage() {
         gender: formData.gender,
       };
 
-      const res = await fetch('https://learn.smktelkom-mlg.sch.id/kos/api/admin/store_kos', {
+      const res = await fetch('https://learn.smktelkom-mlg.sch.id/kos/api/admin/store_kos/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

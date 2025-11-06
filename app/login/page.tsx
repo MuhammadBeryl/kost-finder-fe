@@ -1,6 +1,5 @@
 'use client';
 
-// ...existing code...
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { EnvelopeIcon, LockClosedIcon } from '@heroicons/react/24/solid';
@@ -26,50 +25,70 @@ export default function LoginPage() {
 
       const res = await fetch('https://learn.smktelkom-mlg.sch.id/kos/api/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json',
-          'MakerID': '1'
-         },
+        headers: {
+          'Content-Type': 'application/json',
+          'MakerID': '1',
+        },
         body: JSON.stringify({ email, password }),
       });
 
       const data = await res.json().catch(() => null);
 
       if (!res.ok) {
-        const msg = data && (data.message || data.error) ? (data.message || data.error) : 'Login gagal';
+        const msg = data?.message || data?.error || 'Login gagal';
         setError(String(msg));
         return;
       }
 
-      // ambil token & user id dari banyak kemungkinan struktur response
-      const token = data?.token || data?.access_token || data?.data?.token || data?.data?.access_token || data?.data?.accessToken;
-      const userId = data?.user?.id || data?.data?.user?.id || data?.data?.id || data?.id;
+      // Ambil token dan user data dari response
+      const token =
+        data?.token ||
+        data?.access_token ||
+        data?.data?.token ||
+        data?.data?.access_token ||
+        data?.data?.accessToken;
+
+      const user = data?.user || data?.data?.user || data?.data || {};
+      const userId = user?.id;
+      const userRole = user?.role || 'society'; // default kalau role tidak ada
 
       if (!token) {
         setError('Token tidak diterima dari server.');
         return;
       }
 
-      // simpan cookie (1 hari)
+      // Simpan ke cookie
       storeCookies('token', token);
       if (userId) storeCookies('user_id', String(userId));
+      storeCookies('user_role', userRole);
 
       setSuccess('Login berhasil! Mengalihkan...');
-      setTimeout(() => router.push('/owner/kos'), 800);
-    } catch {
+
+      // 🔹 Redirect berdasarkan role
+      setTimeout(() => {
+        if (userRole === 'owner') {
+          router.push('/owner');
+        } else if (userRole === 'society') {
+          router.push('/society');
+        } else {
+          router.push('/'); // fallback default
+        }
+      }, 1000);
+    } catch (err) {
+      console.error(err);
       setError('Terjadi kesalahan saat login.');
     }
   };
 
   return (
     <div className="relative min-h-screen w-full bg-gray-900">
-      {/* Background Image */}
+      {/* Background */}
       <div className="absolute inset-0">
         <img
           src="/images/KamarKos-Kos.jpg"
           alt="Background"
           className="w-full h-full object-cover"
         />
-        {/* Overlay hitam transparan */}
         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
       </div>
 
@@ -88,16 +107,12 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {error && (
-            <p className="text-red-500 text-sm text-center mb-3">{error}</p>
-          )}
-          {success && (
-            <p className="text-green-600 text-sm text-center mb-3">{success}</p>
-          )}
+          {error && <p className="text-red-500 text-sm text-center mb-3">{error}</p>}
+          {success && <p className="text-green-600 text-sm text-center mb-3">{success}</p>}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Email */}
-            <div className="flex items-center gap-3 bg-white border border-gray-300 rounded-xl px-4 py-3 shadow-sm transition-all focus-within:border-indigo-500">
+            <div className="flex items-center gap-3 bg-white border border-gray-300 rounded-xl px-4 py-3 shadow-sm">
               <EnvelopeIcon className="h-5 w-5 text-gray-400" />
               <input
                 type="email"
@@ -110,7 +125,7 @@ export default function LoginPage() {
             </div>
 
             {/* Password */}
-            <div className="flex items-center gap-3 bg-white border border-gray-300 rounded-xl px-4 py-3 shadow-sm transition-all focus-within:border-indigo-500">
+            <div className="flex items-center gap-3 bg-white border border-gray-300 rounded-xl px-4 py-3 shadow-sm">
               <LockClosedIcon className="h-5 w-5 text-gray-400" />
               <input
                 type="password"
@@ -122,17 +137,6 @@ export default function LoginPage() {
               />
             </div>
 
-            {/* Forgot Password */}
-            <div className="text-right text-sm">
-              <button
-                type="button"
-                className="text-indigo-600 hover:underline font-medium"
-                onClick={() => alert('Fitur lupa password belum diaktifkan')}
-              >
-                Lupa Password?
-              </button>
-            </div>
-
             {/* Submit */}
             <button
               type="submit"
@@ -142,7 +146,6 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Link ke register */}
           <p className="text-sm text-gray-600 mt-6 text-center">
             Belum punya akun?{' '}
             <span
