@@ -80,21 +80,42 @@ export default function MasterKosPage() {
     }
   };
 
-  const deleteKos = async (id: number) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus kos ini?')) return;
+const deleteKos = async (kosId: number) => {
+  if (!confirm('Apakah Anda yakin ingin menghapus kos ini?')) return;
 
-    try {
-      const res = await fetch(`http://localhost:3000/kos/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        alert('Kos berhasil dihapus');
-        getKos();
-      } else {
-        alert('Gagal menghapus kos');
-      }
-    } catch {
-      alert('Terjadi kesalahan saat menghapus kos.');
+  try {
+    const token = getCookies('token');
+    if (!token) {
+      alert('Token tidak ditemukan. Silakan login ulang.');
+      router.push('/login');
+      return;
     }
-  };
+
+    const res = await fetch(`https://learn.smktelkom-mlg.sch.id/kos/api/delete_kos/${kosId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'MakerID': '1',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    const text = await res.text();
+    console.log('Delete response:', res.status, text);
+
+    if (res.ok) {
+      alert('Kos berhasil dihapus');
+      getKos();
+    } else if (res.status === 404) {
+      alert('Endpoint tidak ditemukan. Pastikan URL benar: /kos/api/delete_kos/{id}');
+    } else {
+      alert(`Gagal menghapus kos: ${text || res.statusText}`);
+    }
+  } catch (err) {
+    console.error('Error saat hapus kos:', err);
+    alert('Terjadi kesalahan saat menghapus kos.');
+  }
+};
 
   useEffect(() => {
     getKos();
@@ -116,8 +137,8 @@ export default function MasterKosPage() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Cari (mis. biru)"
-            className="border border-gray-300 rounded-xl px-3 py-2 text-sm"
+            placeholder="Cari kos"
+            className="border border-gray-300 rounded-xl px-3 py-2 text-black"
           />
           <button
             onClick={() => getKos(search)}
