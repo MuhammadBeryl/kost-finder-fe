@@ -1,4 +1,4 @@
-'use client';
+ 'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -65,7 +65,7 @@ export default function MasterKosPage() {
               id_kos: id,
               nama_kos: String(name),
               harga_kos: price,
-              lokasi_kos: String(location),
+              lokasi_kos: String(location), 
               deskripsi_kos: String(desc),
             } as Kos;
           })
@@ -91,7 +91,7 @@ const deleteKos = async (kosId: number) => {
       return;
     }
 
-    const res = await fetch(`https://learn.smktelkom-mlg.sch.id/kos/api/delete_kos/${kosId}`, {
+    const res = await fetch(`https://learn.smktelkom-mlg.sch.id/kos/api/admin/delete_kos/${kosId}`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
@@ -107,7 +107,7 @@ const deleteKos = async (kosId: number) => {
       alert('Kos berhasil dihapus');
       getKos();
     } else if (res.status === 404) {
-      alert('Endpoint tidak ditemukan. Pastikan URL benar: /kos/api/delete_kos/{id}');
+      alert('Endpoint tidak ditemukan. Pastikan URL benar: /kos/api/admin/delete_kos/{id}');
     } else {
       alert(`Gagal menghapus kos: ${text || res.statusText}`);
     }

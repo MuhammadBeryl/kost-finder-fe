@@ -1,39 +1,35 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { getCookies } from '../../../../lib/client-cookie';
-import Button from '../../../components/Ui/Button';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
+import { getCookies } from '../../../../../lib/client-cookie';
+import Button from '../../../../components/Ui/Button';
 import { 
   ArrowLeftIcon, 
   PhotoIcon,
-  HomeIcon,
   InformationCircleIcon,
   CloudArrowUpIcon
 } from '@heroicons/react/24/outline';
 
-interface Kos {
-  id_kos: number;
-  nama_kos: string;
-}
-
-export default function UploadImageKosPage() {
+export default function EditImageKosPage() {
   const router = useRouter();
+  const params = useParams();
   const searchParams = useSearchParams();
+  const id = params?.id;
   const kosIdFromQuery = searchParams.get('kos_id');
   
-  const [kosList, setKosList] = useState<Kos[]>([]);
-  const [kosId, setKosId] = useState(kosIdFromQuery || '');
+  const [currentImage, setCurrentImage] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [loadingKos, setLoadingKos] = useState(true);
-  const [errors, setErrors] = useState<{ kos_id?: string; file?: string }>({});
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
-  // Ambil daftar kos
+  // Ambil detail gambar yang akan diupdate
   useEffect(() => {
-    const fetchKos = async () => {
-      setLoadingKos(true);
+    const fetchImageDetail = async () => {
+      if (!id) return;
+      
+      setLoading(true);
       try {
         const token = getCookies('token');
         if (!token) {
@@ -42,34 +38,37 @@ export default function UploadImageKosPage() {
           return;
         }
 
-        const res = await fetch('https://learn.smktelkom-mlg.sch.id/kos/api/admin/show_kos', {
-          headers: {
-            'Content-Type': 'application/json',
-            'MakerID': '1',
-            'Authorization': `Bearer ${token}`,
-          },
-        });
+        const res = await fetch(
+          `https://learn.smktelkom-mlg.sch.id/kos/api/admin/detail_image/${id}`,
+          {
+            headers: {
+              'MakerID': '1',
+              'Authorization': `Bearer ${token}`,
+            },
+          }
+        );
 
         if (res.ok) {
           const data = await res.json();
-          const raw = data.data || data || [];
-          const mapped = Array.isArray(raw)
-            ? raw.map((it: any) => ({
-                id_kos: it.id_kos ?? it.id ?? 0,
-                nama_kos: it.nama_kos ?? it.name ?? it.nama ?? '',
-              }))
-            : [];
-          setKosList(mapped);
+          const imageData = data.data || data;
+          const imageFile = imageData.file ?? imageData.image_url ?? imageData.url ?? '';
+          
+          if (imageFile) {
+            const fullUrl = imageFile.startsWith('http') 
+              ? imageFile 
+              : `https://learn.smktelkom-mlg.sch.id/kos/${imageFile}`;
+            setCurrentImage(fullUrl);
+          }
         }
       } catch (err) {
-        console.error('Gagal mengambil data kos:', err);
+        console.error('Gagal memuat detail gambar:', err);
       } finally {
-        setLoadingKos(false);
+        setLoading(false);
       }
     };
 
-    fetchKos();
-  }, []);
+    fetchImageDetail();
+  }, [id]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -88,39 +87,21 @@ export default function UploadImageKosPage() {
 
       setFile(selectedFile);
       setPreview(URL.createObjectURL(selectedFile));
-      
-      if (errors.file) {
-        setErrors({ ...errors, file: undefined });
-      }
     }
-  };
-
-  const validateForm = (): boolean => {
-    const newErrors: { kos_id?: string; file?: string } = {};
-    
-    if (!kosId) {
-      newErrors.kos_id = 'Pilih kos terlebih dahulu';
-    }
-    
-    if (!file) {
-      newErrors.file = 'Pilih gambar yang akan diupload';
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm()) {
+    if (!file) {
+      alert('Pilih gambar baru terlebih dahulu!');
       return;
     }
 
-    setLoading(true);
+    setSubmitting(true);
 
     const formData = new FormData();
-    formData.append('file', file!);
+    formData.append('file', file);
 
     try {
       const token = getCookies('token');
@@ -130,14 +111,13 @@ export default function UploadImageKosPage() {
         return;
       }
 
-      const url = `https://learn.smktelkom-mlg.sch.id/kos/api/admin/upload_image/${kosId}`;
+      const url = `https://learn.smktelkom-mlg.sch.id/kos/api/admin/update_image/${id}`;
 
       const res = await fetch(url, {
         method: 'POST',
         headers: {
           'MakerID': '1',
           'Authorization': `Bearer ${token}`,
-          // Tidak perlu Content-Type karena FormData akan set otomatis
         },
         body: formData,
       });
@@ -151,22 +131,22 @@ export default function UploadImageKosPage() {
       const data = await res.json().catch(() => null);
 
       if (res.ok) {
-        const msg = data?.message || 'Gambar berhasil diupload!';
+        const msg = data?.message || 'Gambar berhasil diperbarui!';
         alert(msg);
         router.push('/owner/imagekos');
       } else {
-        const errMsg = data?.message || data?.error || 'Gagal mengupload gambar.';
+        const errMsg = data?.message || data?.error || 'Gagal memperbarui gambar.';
         alert(errMsg);
       }
     } catch (err) {
       console.error('Error:', err);
       alert('Terjadi kesalahan koneksi ke server.');
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
-  if (loadingKos) {
+  if (loading) {
     return (
       <div className="bg-white p-8 rounded-2xl shadow-md max-w-3xl mx-auto">
         <div className="flex items-center justify-center space-x-2">
@@ -177,8 +157,6 @@ export default function UploadImageKosPage() {
     );
   }
 
-  const selectedKosData = kosList.find((k) => k.id_kos === Number(kosId));
-
   return (
     <div className="bg-white p-8 rounded-2xl shadow-md max-w-3xl mx-auto">
       {/* Header */}
@@ -186,10 +164,10 @@ export default function UploadImageKosPage() {
         <div>
           <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
             <PhotoIcon className="h-7 w-7 text-indigo-600" />
-            Upload Gambar Kos
+            Update Gambar Kos
           </h2>
           <p className="text-sm text-gray-500 mt-1">
-            Upload gambar untuk kos Anda
+            Ganti gambar dengan yang baru
           </p>
         </div>
         <button
@@ -203,46 +181,32 @@ export default function UploadImageKosPage() {
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Pilih Kos */}
-        <div className="relative">
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
-            Pilih Kos <span className="text-red-500">*</span>
-          </label>
+        {/* Gambar Saat Ini */}
+        {currentImage && (
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <HomeIcon className="h-5 w-5 text-gray-400" />
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Gambar Saat Ini
+            </label>
+            <div className="relative rounded-xl overflow-hidden shadow-lg">
+              <img
+                src={currentImage}
+                alt="Current"
+                className="w-full h-64 object-cover"
+                onError={(e) => {
+                  e.currentTarget.src = 'https://via.placeholder.com/400x300?text=Image+Not+Found';
+                }}
+              />
+              <div className="absolute top-3 left-3 bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium">
+                Gambar Lama
+              </div>
             </div>
-            <select
-              value={kosId}
-              onChange={(e) => {
-                setKosId(e.target.value);
-                if (errors.kos_id) {
-                  setErrors({ ...errors, kos_id: undefined });
-                }
-              }}
-              className="w-full pl-10 px-4 py-2.5 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-gray-800 bg-white"
-              required
-            >
-              <option value="">-- Pilih Kos --</option>
-              {kosList.map((kos) => (
-                <option key={kos.id_kos} value={kos.id_kos}>
-                  {kos.nama_kos}
-                </option>
-              ))}
-            </select>
           </div>
-          {errors.kos_id && <p className="text-xs text-red-500 mt-1">{errors.kos_id}</p>}
-          {selectedKosData && (
-            <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
-              ✓ Gambar akan diupload ke: <strong>{selectedKosData.nama_kos}</strong>
-            </p>
-          )}
-        </div>
+        )}
 
         {/* File Upload */}
         <div className="relative">
           <label className="block text-sm font-semibold text-gray-700 mb-2">
-            Pilih Gambar <span className="text-red-500">*</span>
+            Pilih Gambar Baru <span className="text-red-500">*</span>
           </label>
           
           <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 hover:border-indigo-400 transition-colors">
@@ -250,7 +214,7 @@ export default function UploadImageKosPage() {
               <CloudArrowUpIcon className="h-12 w-12 text-gray-400 mx-auto mb-3" />
               <label htmlFor="file-upload" className="cursor-pointer">
                 <span className="text-indigo-600 hover:text-indigo-700 font-medium">
-                  Klik untuk upload
+                  Klik untuk upload gambar baru
                 </span>
                 <span className="text-gray-500"> atau drag & drop</span>
               </label>
@@ -265,14 +229,13 @@ export default function UploadImageKosPage() {
               />
             </div>
           </div>
-          {errors.file && <p className="text-xs text-red-500 mt-1">{errors.file}</p>}
         </div>
 
-        {/* Preview */}
+        {/* Preview Gambar Baru */}
         {preview && (
           <div className="relative">
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Preview Gambar
+              Preview Gambar Baru
             </label>
             <div className="relative rounded-xl overflow-hidden shadow-lg">
               <img
@@ -280,6 +243,9 @@ export default function UploadImageKosPage() {
                 alt="Preview"
                 className="w-full h-64 object-cover"
               />
+              <div className="absolute top-3 left-3 bg-green-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium">
+                Gambar Baru
+              </div>
               <button
                 type="button"
                 onClick={() => {
@@ -303,13 +269,10 @@ export default function UploadImageKosPage() {
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex gap-3">
           <InformationCircleIcon className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-medium text-blue-900">Tips Upload Gambar</p>
-            <ul className="text-xs text-blue-700 mt-1 list-disc list-inside space-y-1">
-              <li>Gunakan gambar berkualitas tinggi dan jelas</li>
-              <li>Tunjukkan berbagai sudut dan fasilitas kos</li>
-              <li>Pastikan pencahayaan baik</li>
-              <li>Maksimal ukuran file 5MB</li>
-            </ul>
+            <p className="text-sm font-medium text-blue-900">Informasi</p>
+            <p className="text-xs text-blue-700 mt-1">
+              Gambar lama akan diganti dengan gambar baru yang Anda pilih. Pastikan gambar berkualitas baik dan relevan dengan kos.
+            </p>
           </div>
         </div>
 
@@ -320,7 +283,7 @@ export default function UploadImageKosPage() {
             variant="secondary"
             onClick={() => router.push('/owner/imagekos')}
             className="flex-1"
-            disabled={loading}
+            disabled={submitting}
           >
             Batal
           </Button>
@@ -328,15 +291,15 @@ export default function UploadImageKosPage() {
             type="submit"
             variant="primary"
             className="flex-1"
-            disabled={loading}
+            disabled={submitting || !file}
           >
-            {loading ? (
+            {submitting ? (
               <span className="flex items-center justify-center gap-2">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                Mengupload...
+                Memperbarui...
               </span>
             ) : (
-              'Upload Gambar'
+              'Update Gambar'
             )}
           </Button>
         </div>

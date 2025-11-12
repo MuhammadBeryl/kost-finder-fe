@@ -52,6 +52,10 @@ export default function LoginPage() {
       const userId = user?.id;
       const userRole = user?.role || 'society'; // default kalau role tidak ada
 
+      console.log('Login response:', data);
+      console.log('Extracted user:', user);
+      console.log('Token:', token);
+
       if (!token) {
         setError('Token tidak diterima dari server.');
         return;
@@ -61,6 +65,12 @@ export default function LoginPage() {
       storeCookies('token', token);
       if (userId) storeCookies('user_id', String(userId));
       storeCookies('user_role', userRole);
+      
+      // Simpan user object lengkap
+      if (user && user.id) {
+        storeCookies('user', JSON.stringify(user));
+        console.log('User data saved to cookie:', user);
+      }
 
       setSuccess('Login berhasil! Mengalihkan...');
 

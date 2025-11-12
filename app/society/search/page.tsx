@@ -3,14 +3,15 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCookies } from '../../../lib/client-cookie';
-import { WrenchScrewdriverIcon } from '@heroicons/react/24/solid';
 
 interface Kos {
-  id_kos: number;
-  nama_kos: string;
-  harga_kos: number;
-  lokasi_kos: string;
-  deskripsi_kos: string;
+  id: number;
+  name: string;
+  price_per_month: number;
+  address: string;
+  gender: string;
+  kos_image?: any[];
+  kos_facilities?: any[];
 }
 
 export default function SearchKosPage() {
@@ -32,8 +33,8 @@ export default function SearchKosPage() {
         return;
       }
 
-      const params = q ? `?search=${encodeURIComponent(q)}` : '';
-      const url = `https://learn.smktelkom-mlg.sch.id/kos/api/admin/show_kos${params}`;
+      const params = q ? `?search=${encodeURIComponent(q)}` : '?search=';
+      const url = `https://learn.smktelkom-mlg.sch.id/kos/api/society/show_kos${params}`;
 
       const res = await fetch(url, {
         method: 'GET',
@@ -49,18 +50,23 @@ export default function SearchKosPage() {
       }
 
       const data = await res.json();
+      console.log('API Response:', data);
+      
       const items = (data && (data.data || data)) || [];
 
       const normalized = Array.isArray(items)
         ? items.map((it: any) => ({
-            id_kos: it.id_kos ?? it.id ?? 0,
-            nama_kos: it.nama_kos ?? it.nama ?? 'Tanpa Nama',
-            harga_kos: Number(it.harga_kos ?? it.harga ?? 0),
-            lokasi_kos: it.lokasi_kos ?? it.lokasi ?? 'Tidak diketahui',
-            deskripsi_kos: it.deskripsi_kos ?? it.deskripsi ?? '-',
+            id: it.id ?? 0,
+            name: it.name ?? 'Tanpa Nama',
+            price_per_month: Number(it.price_per_month ?? 0),
+            address: it.address ?? 'Tidak diketahui',
+            gender: it.gender ?? '-',
+            kos_image: it.kos_image ?? [],
+            kos_facilities: it.kos_facilities ?? [],
           }))
         : [];
 
+      console.log('Normalized data:', normalized);
       setKosList(normalized);
     } catch (err) {
       console.error('Gagal mengambil data kos:', err);
@@ -106,25 +112,48 @@ export default function SearchKosPage() {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {kosList.map((kos) => (
             <div
-              key={kos.id_kos}
+              key={kos.id}
               className="bg-gray-50 border border-gray-200 p-5 rounded-2xl shadow-sm hover:shadow-md transition"
             >
-              <h3 className="font-semibold text-gray-900 text-lg">{kos.nama_kos}</h3>
-              <p className="text-gray-600 text-sm mt-1">📍 {kos.lokasi_kos}</p>
+              {/* Image Preview */}
+              {kos.kos_image && kos.kos_image.length > 0 ? (
+                <img
+                  src={`https://learn.smktelkom-mlg.sch.id/kos/${kos.kos_image[0].file}`}
+                  alt={kos.name}
+                  className="w-full h-40 object-cover rounded-lg mb-3"
+                />
+              ) : (
+                <div className="w-full h-40 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-lg mb-3 flex items-center justify-center">
+                  <span className="text-4xl">🏠</span>
+                </div>
+              )}
+              
+              <h3 className="font-semibold text-gray-900 text-lg">{kos.name}</h3>
+              <p className="text-gray-600 text-sm mt-1">📍 {kos.address}</p>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-xs bg-gray-200 px-2 py-1 rounded-full text-gray-700">
+                  {kos.gender === 'male' ? '👨 Pria' : kos.gender === 'female' ? '👩 Wanita' : '👥 Campur'}
+                </span>
+              </div>
               <p className="text-indigo-700 font-bold mt-2">
-                Rp {kos.harga_kos.toLocaleString()}
+                Rp {kos.price_per_month.toLocaleString()} / bulan
               </p>
-              <p className="text-gray-500 text-sm mt-2 line-clamp-2">
-                {kos.deskripsi_kos}
-              </p>
+              
+              {/* Facilities Preview */}
+              {kos.kos_facilities && kos.kos_facilities.length > 0 && (
+                <div className="mt-2">
+                  <p className="text-xs text-gray-500">
+                    ✨ {kos.kos_facilities.length} Fasilitas
+                  </p>
+                </div>
+              )}
 
               <div className="flex justify-end mt-4">
                 <button
-                  onClick={() => router.push(`/owner/fasilitas/${kos.id_kos}`)}
+                  onClick={() => router.push(`/society/kos/${kos.id}`)}
                   className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm"
                 >
-                  <WrenchScrewdriverIcon className="h-5 w-5" />
-                  Kelola Fasilitas
+                  Lihat Detail
                 </button>
               </div>
             </div>
